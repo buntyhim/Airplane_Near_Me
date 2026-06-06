@@ -8,6 +8,8 @@
 struct Aircraft {
     String icao24;
     String callsign;
+    float barHeight;
+    float speed;
     float distance;
     String source;
     String destination;

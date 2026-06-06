@@ -46,12 +46,32 @@ bool FlightService::fetchFlights() {
                     Aircraft a;
                     // OpenSky /states/all returns a 2D array.
                     // We access values by index.
-                    if (state.size() >= 3) {
+                    if (state.size() >= 10) {
                         a.icao24 = state[0].as<String>();
                         a.callsign = state[1].as<String>();
+                        a.barHeight = state[7].as<float>();
+                        a.speed = state[9].as<float>();
                         a.source = state[2].as<String>();
-                        a.distance = 0.0; // Not available in /states/all
-                        a.destination = "N/A"; // Not available in /states/all
+                        a.destination = "N/A";
+
+                        // Calculate distance from my location (MY_LAT, MY_LON)
+                        float lat1 = MY_LAT;
+                        float lon1 = MY_LON;
+                        float lat2 = state[6].as<float>();
+                        float lon2 = state[5].as<float>();
+
+                        // Haversine Formula
+                        float dLat = (lat2 - lat1) * M_PI / 180.0;
+                        float dLon = (lon2 - lon1) * M_PI / 180.0;
+                        float rLat1 = lat1 * M_PI / 180.0;
+                        float rLat2 = lat2 * M_PI / 180.0;
+
+                        float a_haver = sin(dLat/2) * sin(dLat/2) +
+                                       cos(rLat1) * cos(rLat2) *
+                                       sin(dLon/2) * sin(dLon/2);
+                        float c = 2 * atan2(sqrt(a_haver), sqrt(1 - a_haver));
+                        a.distance = 6371000 * c / 1000.0; // Distance in km
+
                         nearbyPlanes.push_back(a);
                     }
                 }

@@ -32,46 +32,66 @@ void setup() {
     wifiMgr.begin();
     displayMgr.begin();
 
-    Serial.println("System Started");
+    Serial.println("Connecting to WiFi...");
+    wifiMgr.connect();
+
+    // Block until connected before entering the main loop
+    while (!wifiMgr.isConnected()) {
+        Serial.println("Waiting for connection...");
+        delay(1000);
+    }
+
+    Serial.println("Connected! Fetching initial data...");
+    if (flightSvc.fetchFlights()) {
+        nextUpdateTime = millis() + 60000; // Set next update to 60s
+        displayMgr.setNeedsRedraw(true);
+        Serial.println("Initial data fetched successfully.");
+    } else {
+        Serial.println("Failed to fetch initial data.");
+        nextUpdateTime = millis() + 60000; // Still set timer so we don't spam
+    }
+
+    Serial.println("Starting loop.");
 }
 
 void loop() {
     M5.update();
 
-    // Handle Button A: Toggle Screen & Connect WiFi
+    // Handle Button A: Toggle Screen
+    static bool btnA_handled = false;
     if (M5.BtnA.wasClicked()) {
-        Serial.println("Button A Pressed");
-        if (WiFi.status() != WL_CONNECTED) {
-            wifiMgr.connect();
+        if (!btnA_handled) {
+            btnA_handled = true;
+            Serial.println("Button A Pressed");
+            displayMgr.toggleScreen();
         }
-        displayMgr.toggleScreen();
+    }
+    if (!M5.BtnA.wasClicked()) {
+        btnA_handled = false;
     }
 
     // Handle Button B: Scroll
     if (M5.BtnB.wasClicked()) {
-        Serial.println("Button B Pressed");
+        Serial.println("Button B Clicked");
         displayMgr.scroll(1, flightSvc.getNearbyPlanes());
+    }
+    if (M5.BtnB.pressedFor(400)) {
+        Serial.println("Button B Long Pressed");
+        displayMgr.scroll(-1, flightSvc.getNearbyPlanes());
     }
 
     // Update Logic
     if (displayMgr.isScreenOn()) {
         // Fetch data if timer expired
         if (millis() > nextUpdateTime) {
-            if (wifiMgr.isConnected()) {
-                Serial.println("Fetching new flight data...");
-                if (flightSvc.fetchFlights()) {
-                    nextUpdateTime = millis() + 60000; // Set next update to 60s
-                    displayMgr.setNeedsRedraw(true);
-                    Serial.println("Data updated successfully.");
-                } else {
-                    Serial.println("Failed to fetch data.");
-                }
+            // We are guaranteed to be connected because we blocked in setup
+            Serial.println("Fetching new flight data...");
+            if (flightSvc.fetchFlights()) {
+                nextUpdateTime = millis() + 60000; // Set next update to 60s
+                displayMgr.setNeedsRedraw(true);
+                Serial.println("Data updated successfully.");
             } else {
-                if (wifiMgr.getState() == WiFiManager::IDLE_CONN) {
-                    Serial.println("WiFi disconnected, attempting to connect...");
-                    wifiMgr.connect();
-                }
-                nextUpdateTime = millis() + 5000;
+                Serial.println("Failed to fetch data.");
             }
         }
 

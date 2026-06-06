@@ -53,23 +53,23 @@ void DisplayManager::update(FlightService& flightService, WiFiManager::State con
     M5.Lcd.setCursor(0, 30);
     M5.Lcd.setTextColor(WHITE);
     M5.Lcd.setTextSize(1);
-    M5.Lcd.println("Nearby Aircraft:");
+    M5.Lcd.println("------------------------------------");
+    M5.Lcd.println("Callsign    | Alt   | Spd  | Dist");
     M5.Lcd.println("------------------------------------");
 
     if (m_needsRedraw) {
-        M5.Lcd.fillRect(0, 55, 240, 120, BLACK);
+        M5.Lcd.fillRect(0, 75, 240, 120, BLACK);
 
         const auto& planes = flightService.getNearbyPlanes();
         for (int i = 0; i < MAX_VISIBLE_LINES; i++) {
             int idx = scrollOffset + i;
             if (idx < (int)planes.size()) {
-                M5.Lcd.setCursor(0, 55 + (i * 12));
-                M5.Lcd.printf("%-8s | %-5s | %-5.1f | %-4s | %-4s\n",
+                M5.Lcd.setCursor(0, 75 + (i * 12));
+                M5.Lcd.printf("%-10s | %-7d | %-5d | %-5.1f\n",
                     planes[idx].callsign.c_str(),
-                    planes[idx].icao24.c_str(),
-                    planes[idx].distance,
-                    planes[idx].source.c_str(),
-                    planes[idx].destination.c_str());
+                    (int)(planes[idx].barHeight / 10.0) * 10,
+                    (int)planes[idx].speed,
+                    planes[idx].distance);
             }
         }
         m_needsRedraw = false;
