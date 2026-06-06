@@ -1,0 +1,14 @@
+# PlatformIO
+.pio/
+.vscode/
+build/
+
+# OS generated files
+Thumbs.db
+desktop.ini
+
+# Compiled binaries
+*.bin
+*.elf
+*.hex
+*.uf2
